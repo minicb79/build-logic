@@ -68,5 +68,11 @@ gradlePlugin {
             displayName = "MinicDesign API Generation Plugin"
             description = "Automatically generates restful Java classes from OpenAPI specs and SOAP Java classes from WSDL files."
         }
+        register("docker-compose") {
+            id = "com.minicdesign.docker-compose"
+            implementationClass = "com.minicdesign.buildlogic.DockerComposePlugin"
+            displayName = "MinicDesign Docker Compose Plugin"
+            description = "Registers tasks to manage docker-compose configurations per project."
+        }
     }
 }

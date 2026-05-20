@@ -5,6 +5,7 @@ springBoot = "4.0.5"
 dependencyManagement = "1.1.7"
 otelBom = "1.41.0"
 otelLogbackAppender = "2.21.0-alpha"
+wiremock = "3.12.0"
 
 [libraries]
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
@@ -15,3 +16,4 @@ opentelemetry-bom = { group = "io.opentelemetry", name = "opentelemetry-bom", ve
 opentelemetry-api = { group = "io.opentelemetry", name = "opentelemetry-api" }
 opentelemetry-sdk = { group = "io.opentelemetry", name = "opentelemetry-sdk" }
 opentelemetry-logback-appender = { group = "io.opentelemetry.instrumentation", name = "opentelemetry-logback-appender-1.0", version.ref = "otelLogbackAppender" }
+wiremock-standalone = { group = "org.wiremock", name = "wiremock-standalone", version.ref = "wiremock" }

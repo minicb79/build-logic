@@ -20,6 +20,8 @@ dependencies {
     // We add the Spring Boot and Spring Dependency Management plugins so we can apply them in our spring-service plugin
     implementation(libs.springBoot.gradlePlugin)
     implementation(libs.dependencyManagement.gradlePlugin)
+    // We add the Wiremock standalone plugin library for our custom tasks
+    implementation(libs.wiremock.standalone)
 }
 
 gradlePlugin {
@@ -53,6 +55,12 @@ gradlePlugin {
             implementationClass = "com.minicdesign.buildlogic.SpringOtelLoggingPlugin"
             displayName = "MinicDesign Spring OpenTelemetry Logging Plugin"
             description = "Applies OpenTelemetry base logging and configures Spring Boot logging autoconfigurations."
+        }
+        register("wiremock") {
+            id = "com.minicdesign.wiremock"
+            implementationClass = "com.minicdesign.buildlogic.WiremockPlugin"
+            displayName = "MinicDesign Wiremock Plugin"
+            description = "Applies tasks to merge wiremock mappings/files and start/stop Wiremock server."
         }
     }
 }

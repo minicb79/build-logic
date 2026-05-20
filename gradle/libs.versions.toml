@@ -3,9 +3,15 @@ kotlin = "2.2.21"
 spotless = "6.25.0"
 springBoot = "4.0.5"
 dependencyManagement = "1.1.7"
+otelBom = "1.41.0"
+otelLogbackAppender = "2.21.0-alpha"
 
 [libraries]
 kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 spotless-gradlePlugin = { group = "com.diffplug.spotless", name = "spotless-plugin-gradle", version.ref = "spotless" }
 springBoot-gradlePlugin = { group = "org.springframework.boot", name = "spring-boot-gradle-plugin", version.ref = "springBoot" }
 dependencyManagement-gradlePlugin = { group = "io.spring.gradle", name = "dependency-management-plugin", version.ref = "dependencyManagement" }
+opentelemetry-bom = { group = "io.opentelemetry", name = "opentelemetry-bom", version.ref = "otelBom" }
+opentelemetry-api = { group = "io.opentelemetry", name = "opentelemetry-api" }
+opentelemetry-sdk = { group = "io.opentelemetry", name = "opentelemetry-sdk" }
+opentelemetry-logback-appender = { group = "io.opentelemetry.instrumentation", name = "opentelemetry-logback-appender-1.0", version.ref = "otelLogbackAppender" }

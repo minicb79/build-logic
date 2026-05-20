@@ -42,5 +42,17 @@ gradlePlugin {
             displayName = "MinicDesign Spring Service Conventions Plugin"
             description = "Applies standard conventions for Spring Boot Web services in Java/Kotlin."
         }
+        register("otel-base") {
+            id = "com.minicdesign.otel-base"
+            implementationClass = "com.minicdesign.buildlogic.OtelBasePlugin"
+            displayName = "MinicDesign OpenTelemetry Base Plugin"
+            description = "Applies base OpenTelemetry API, SDK, and Logback logging dependencies."
+        }
+        register("spring-otel-logging") {
+            id = "com.minicdesign.spring-otel-logging"
+            implementationClass = "com.minicdesign.buildlogic.SpringOtelLoggingPlugin"
+            displayName = "MinicDesign Spring OpenTelemetry Logging Plugin"
+            description = "Applies OpenTelemetry base logging and configures Spring Boot logging autoconfigurations."
+        }
     }
 }

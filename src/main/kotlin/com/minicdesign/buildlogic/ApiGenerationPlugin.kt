@@ -38,8 +38,8 @@ class ApiGenerationPlugin : Plugin<Project> {
             project.dependencies.add("wsdl2java", "org.glassfish.jaxb:jaxb-runtime:4.0.5")
         }
 
-        val openapiDir = project.projectDir.resolve("contracts/openapi")
-        val wsdlDir = project.projectDir.resolve("contracts/wsdl")
+        val openapiDir = project.projectDir.resolve("api-specs/openapi")
+        val wsdlDir = project.projectDir.resolve("api-specs/wsdl")
 
         val apiGenTasks = mutableListOf<TaskProvider<JavaExec>>()
 

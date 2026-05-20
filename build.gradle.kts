@@ -14,9 +14,9 @@ repositories {
 
 dependencies {
     // We add the Kotlin Gradle Plugin so we can use its classes/interfaces in our Kotlin conventions compiled plugin
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.21")
+    implementation(libs.kotlin.gradlePlugin)
     // We add the Spotless plugin so we can configure source formatting conventions
-    implementation("com.diffplug.spotless:spotless-plugin-gradle:6.25.0")
+    implementation(libs.spotless.gradlePlugin)
 }
 
 gradlePlugin {

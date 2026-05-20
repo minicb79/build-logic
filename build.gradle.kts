@@ -62,5 +62,11 @@ gradlePlugin {
             displayName = "MinicDesign Wiremock Plugin"
             description = "Applies tasks to merge wiremock mappings/files and start/stop Wiremock server."
         }
+        register("api-generation") {
+            id = "com.minicdesign.api-generation"
+            implementationClass = "com.minicdesign.buildlogic.ApiGenerationPlugin"
+            displayName = "MinicDesign API Generation Plugin"
+            description = "Automatically generates restful Java classes from OpenAPI specs and SOAP Java classes from WSDL files."
+        }
     }
 }

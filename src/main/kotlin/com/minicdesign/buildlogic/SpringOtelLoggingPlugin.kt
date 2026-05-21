@@ -175,10 +175,28 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                         }
                     }
                 """.trimIndent().replace("\r\n", "\n"))
+
+                // OtelAutoConfiguration.java
+                comMinicdesignOtelDir.resolve("OtelAutoConfiguration.java").writeText("""
+                    package com.minicdesign.otel;
+
+                    import org.springframework.context.annotation.Configuration;
+                    import org.springframework.context.annotation.Import;
+
+                    @Configuration(proxyBeanMethods = false)
+                    @Import({
+                        InstallOpenTelemetryAppender.class,
+                        TraceIdFilter.class,
+                        ContextPropagationConfiguration.class,
+                        OpenTelemetryConfiguration.class
+                    })
+                    public class OtelAutoConfiguration {
+                    }
+                """.trimIndent().replace("\r\n", "\n"))
             }
         }
 
-        // 4. Register task to generate default resources (logback-spring.xml)
+        // 4. Register task to generate default resources (logback-spring.xml and AutoConfiguration imports)
         val generateOtelResourcesTask = project.tasks.register("generateOtelResources") {
             val outputDir = project.layout.buildDirectory.dir("generated/sources/otel/resources")
             outputs.dir(outputDir)
@@ -199,6 +217,12 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                             <appender-ref ref="OTEL"/>
                         </root>
                     </configuration>
+                """.trimIndent().replace("\r\n", "\n"))
+
+                val metaInfSpringDir = resourcesDir.resolve("META-INF/spring")
+                metaInfSpringDir.mkdirs()
+                metaInfSpringDir.resolve("org.springframework.boot.autoconfigure.AutoConfiguration.imports").writeText("""
+                    com.minicdesign.otel.OtelAutoConfiguration
                 """.trimIndent().replace("\r\n", "\n"))
             }
         }

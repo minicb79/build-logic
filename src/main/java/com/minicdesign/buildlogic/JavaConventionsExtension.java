@@ -12,7 +12,7 @@ public class JavaConventionsExtension {
     private final Property<Double> coverageThreshold;
 
     public JavaConventionsExtension(Project project) {
-        this.javaVersion = project.getObjects().property(Integer.class).convention(24);
+        this.javaVersion = project.getObjects().property(Integer.class).convention(25);
         this.jacocoExclusionPatterns = project.getObjects().listProperty(String.class).convention(
             Arrays.asList(
                 "**/model/*.*",

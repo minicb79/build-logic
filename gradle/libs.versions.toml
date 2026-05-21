@@ -1,5 +1,5 @@
 [versions]
-kotlin = "2.2.21"
+kotlin = "2.3.0"
 spotless = "6.25.0"
 springBoot = "4.0.5"
 dependencyManagement = "1.1.7"

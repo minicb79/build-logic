@@ -29,14 +29,16 @@ class KotlinConventionsPlugin : Plugin<Project> {
         // 4. Configure Spotless formatting for Kotlin
         val spotless = project.extensions.getByType(SpotlessExtension::class.java)
         spotless.kotlin {
-            ktlint("0.50.0")
+            ktlint("1.5.0")
             trimTrailingWhitespace()
             endWithNewline()
         }
 
         // 5. Configure separate source set for integration tests (testIntegration)
         val javaExt = project.extensions.getByType(JavaPluginExtension::class.java)
-        val testIntegration = javaExt.sourceSets.create("testIntegration")
+        val testIntegrationAlreadyExists = javaExt.sourceSets.findByName("testIntegration") != null
+        val testIntegration = javaExt.sourceSets.maybeCreate("testIntegration")
+        if (testIntegrationAlreadyExists) return
 
         // Set compile and runtime classpaths for integration tests to include main classes and unit test configurations
         testIntegration.compileClasspath = project.objects.fileCollection().from(

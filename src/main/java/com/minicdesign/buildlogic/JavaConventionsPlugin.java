@@ -39,7 +39,7 @@ public class JavaConventionsPlugin implements Plugin<Project> {
 
         // 4. Configure Java compilation options (UTF-8, warnings as errors, standard lints)
         project.getTasks().withType(JavaCompile.class).configureEach(compile -> {
-            compile.getOptions().getCompilerArgs().addAll(Arrays.asList("-Xlint:all", "-Werror"));
+            compile.getOptions().getCompilerArgs().addAll(Arrays.asList("-Xlint:all", "-Xlint:-dangling-doc-comments", "-Werror"));
             compile.getOptions().setEncoding("UTF-8");
         });
 
@@ -50,7 +50,9 @@ public class JavaConventionsPlugin implements Plugin<Project> {
 
         // 6. Configure separate source set for integration tests (testIntegration)
         JavaPluginExtension javaExt = project.getExtensions().getByType(JavaPluginExtension.class);
-        SourceSet testIntegration = javaExt.getSourceSets().create("testIntegration");
+        boolean testIntegrationAlreadyExists = javaExt.getSourceSets().findByName("testIntegration") != null;
+        SourceSet testIntegration = javaExt.getSourceSets().maybeCreate("testIntegration");
+        if (testIntegrationAlreadyExists) return;
 
         // Set compile and runtime classpaths for integration tests to include main classes and unit test configurations
         testIntegration.setCompileClasspath(
@@ -86,7 +88,8 @@ public class JavaConventionsPlugin implements Plugin<Project> {
         // 7. Configure Spotless formatting for Java
         SpotlessExtension spotless = project.getExtensions().getByType(SpotlessExtension.class);
         spotless.java(java -> {
-            java.googleJavaFormat("1.22.0");
+            java.targetExclude("build/generated/**");
+            java.googleJavaFormat("1.24.0");
             java.removeUnusedImports();
             java.trimTrailingWhitespace();
             java.endWithNewline();

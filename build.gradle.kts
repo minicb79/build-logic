@@ -15,6 +15,8 @@ repositories {
 dependencies {
     // We add the Kotlin Gradle Plugin so we can use its classes/interfaces in our Kotlin conventions compiled plugin
     implementation(libs.kotlin.gradlePlugin)
+    // We add the Kotlin All-Open plugin so we can apply kotlin.plugin.spring programmatically
+    implementation(libs.kotlin.allopen)
     // We add the Spotless plugin so we can configure source formatting conventions
     implementation(libs.spotless.gradlePlugin)
     // We add the Spring Boot and Spring Dependency Management plugins so we can apply them in our spring-service plugin

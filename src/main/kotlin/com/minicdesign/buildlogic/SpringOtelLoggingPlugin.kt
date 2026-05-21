@@ -84,11 +84,11 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
 
                     import io.micrometer.tracing.TraceContext;
                     import io.micrometer.tracing.Tracer;
+                    import jakarta.annotation.Nullable;
                     import jakarta.servlet.FilterChain;
                     import jakarta.servlet.ServletException;
                     import jakarta.servlet.http.HttpServletRequest;
                     import jakarta.servlet.http.HttpServletResponse;
-                    import org.springframework.lang.Nullable;
                     import org.springframework.stereotype.Component;
                     import org.springframework.web.filter.OncePerRequestFilter;
                     import java.io.IOException;
@@ -145,45 +145,31 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                 comMinicdesignOtelDir.resolve("OpenTelemetryConfiguration.java").writeText("""
                     package com.minicdesign.otel;
 
-                    import org.springframework.context.annotation.Bean;
-                    import org.springframework.context.annotation.Configuration;
+                    import io.micrometer.core.instrument.MeterRegistry;
                     import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
+                    import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
                     import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
                     import io.micrometer.core.instrument.binder.jvm.JvmThreadMetrics;
                     import io.micrometer.core.instrument.binder.system.ProcessorMetrics;
-                    import io.micrometer.core.instrument.binder.jvm.OpenTelemetryJvmCpuMeterConventions;
-                    import io.micrometer.core.instrument.binder.jvm.OpenTelemetryJvmMemoryMeterConventions;
-                    import io.micrometer.core.instrument.binder.jvm.OpenTelemetryJvmThreadMeterConventions;
-                    import io.micrometer.core.instrument.binder.jvm.OpenTelemetryJvmClassLoadingMeterConventions;
-                    import io.micrometer.core.instrument.Tags;
-                    import java.util.List;
+                    import jakarta.annotation.PostConstruct;
+                    import org.springframework.context.annotation.Configuration;
 
                     @Configuration(proxyBeanMethods = false)
                     public class OpenTelemetryConfiguration {
 
-                        @Bean
-                        public OpenTelemetryJvmCpuMeterConventions openTelemetryJvmCpuMeterConventions() {
-                            return new OpenTelemetryJvmCpuMeterConventions(Tags.empty());
+                        private final MeterRegistry meterRegistry;
+
+                        public OpenTelemetryConfiguration(MeterRegistry meterRegistry) {
+                            this.meterRegistry = meterRegistry;
                         }
 
-                        @Bean
-                        public ProcessorMetrics processorMetrics() {
-                            return new ProcessorMetrics(List.of(), new OpenTelemetryJvmCpuMeterConventions(Tags.empty()));
-                        }
-
-                        @Bean
-                        public JvmMemoryMetrics jvmMemoryMetrics() {
-                            return new JvmMemoryMetrics(List.of(), new OpenTelemetryJvmMemoryMeterConventions(Tags.empty()));
-                        }
-
-                        @Bean
-                        public JvmThreadMetrics jvmThreadMetrics() {
-                            return new JvmThreadMetrics(List.of(), new OpenTelemetryJvmThreadMeterConventions(Tags.empty()));
-                        }
-
-                        @Bean
-                        public ClassLoaderMetrics classLoaderMetrics() {
-                            return new ClassLoaderMetrics(new OpenTelemetryJvmClassLoadingMeterConventions());
+                        @PostConstruct
+                        public void bindMetrics() {
+                            new ClassLoaderMetrics().bindTo(meterRegistry);
+                            new JvmMemoryMetrics().bindTo(meterRegistry);
+                            new JvmGcMetrics().bindTo(meterRegistry);
+                            new JvmThreadMetrics().bindTo(meterRegistry);
+                            new ProcessorMetrics().bindTo(meterRegistry);
                         }
                     }
                 """.trimIndent().replace("\r\n", "\n"))

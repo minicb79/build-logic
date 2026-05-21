@@ -27,6 +27,12 @@ class SpringServicePlugin : Plugin<Project> {
             "org.springframework.boot:spring-boot-starter-web"
         }
 
+        val springRestClientDep = if (libs != null && libs.findLibrary("spring-boot-starter-restclient").isPresent) {
+            libs.findLibrary("spring-boot-starter-restclient").get()
+        } else {
+            "org.springframework.boot:spring-boot-starter-restclient"
+        }
+
         val kotlinReflectDep = if (libs != null && libs.findLibrary("kotlin-reflect").isPresent) {
             libs.findLibrary("kotlin-reflect").get()
         } else {
@@ -47,6 +53,7 @@ class SpringServicePlugin : Plugin<Project> {
 
         project.dependencies.apply {
             add("implementation", springWebDep)
+            add("implementation", springRestClientDep)
             add("implementation", kotlinReflectDep)
             add("implementation", jacksonKotlinDep)
             add("testImplementation", springTestDep)

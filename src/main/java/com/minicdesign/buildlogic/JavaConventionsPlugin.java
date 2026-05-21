@@ -136,7 +136,7 @@ public class JavaConventionsPlugin implements Plugin<Project> {
 
             // Configure Jacoco Tool Version
             JacocoPluginExtension jacocoExt = project.getExtensions().getByType(JacocoPluginExtension.class);
-            jacocoExt.setToolVersion("0.8.12");
+            jacocoExt.setToolVersion("0.8.14");
 
             // Configure Jacoco Reports
             project.getTasks().withType(JacocoReport.class).configureEach(report -> {
@@ -159,6 +159,8 @@ public class JavaConventionsPlugin implements Plugin<Project> {
 
             // Configure Jacoco Verification
             project.getTasks().withType(JacocoCoverageVerification.class).configureEach(verify -> {
+                verify.dependsOn(project.getTasks().withType(Test.class));
+
                 verify.getClassDirectories().setFrom(project.provider(() ->
                     javaExt.getSourceSets().getByName("main").getOutput().getClassesDirs()
                         .filter(file -> file.exists())

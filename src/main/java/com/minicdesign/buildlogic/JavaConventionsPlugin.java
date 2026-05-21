@@ -13,6 +13,8 @@ import org.gradle.api.tasks.SourceSet;
 import org.gradle.api.tasks.compile.JavaCompile;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.jvm.toolchain.JavaLanguageVersion;
+import org.gradle.plugins.ide.idea.IdeaPlugin;
+import org.gradle.plugins.ide.idea.model.IdeaModel;
 import org.gradle.testing.jacoco.plugins.JacocoPlugin;
 import org.gradle.testing.jacoco.plugins.JacocoPluginExtension;
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification;
@@ -28,6 +30,7 @@ public class JavaConventionsPlugin implements Plugin<Project> {
         project.getPlugins().apply(JavaPlugin.class);
         project.getPlugins().apply(JacocoPlugin.class);
         project.getPlugins().apply("com.diffplug.spotless");
+        project.getPlugins().apply(IdeaPlugin.class);
 
         // 2. Create the configuration extension
         JavaConventionsExtension extension = project.getExtensions().create(
@@ -95,7 +98,16 @@ public class JavaConventionsPlugin implements Plugin<Project> {
             java.endWithNewline();
         });
 
-        // 8. Post-evaluation setup (for user-customized extension values)
+        // 8. Configure IntelliJ IDEA.  Source root registration for generated code is handled
+        // explicitly by ApiGenerationPlugin and SpringOtelLoggingPlugin, which know the exact
+        // output directory structure for each generator type.
+        project.getPlugins().withType(IdeaPlugin.class, ideaPlugin -> {
+            IdeaModel ideaModel = project.getExtensions().getByType(IdeaModel.class);
+            ideaModel.getModule().setDownloadJavadoc(true);
+            ideaModel.getModule().setDownloadSources(true);
+        });
+
+        // 9. Post-evaluation setup (for user-customized extension values)
         project.afterEvaluate(p -> {
             // Configure library catalog dependencies
             VersionCatalogsExtension catalogs = project.getExtensions().findByType(VersionCatalogsExtension.class);

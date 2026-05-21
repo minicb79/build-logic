@@ -7,6 +7,8 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.plugins.ide.idea.IdeaPlugin
+import org.gradle.plugins.ide.idea.model.IdeaModel
 import org.gradle.process.CommandLineArgumentProvider
 import java.util.Locale
 
@@ -41,7 +43,11 @@ class ApiGenerationPlugin : Plugin<Project> {
         val openapiDir = project.projectDir.resolve("api-specs/openapi")
         val wsdlDir = project.projectDir.resolve("api-specs/wsdl")
 
-        val apiGenTasks = mutableListOf<TaskProvider<JavaExec>>()
+        // Track tasks separately so we can register the correct IDEA source root for each:
+        //   OpenAPI generator nests Java under <outputDir>/src/main/java
+        //   CXF wsdl2java writes Java directly into <outputDir>
+        val openApiTasks = mutableListOf<TaskProvider<JavaExec>>()
+        val wsdlTasks = mutableListOf<TaskProvider<JavaExec>>()
 
         if (openapiDir.exists() && openapiDir.isDirectory) {
             openapiDir.listFiles()?.filter { it.isFile && (it.extension == "yaml" || it.extension == "yml" || it.extension == "json") }?.forEach { specFile ->
@@ -73,7 +79,7 @@ class ApiGenerationPlugin : Plugin<Project> {
                         )
                     })
                 }
-                apiGenTasks.add(task)
+                openApiTasks.add(task)
             }
         }
 
@@ -102,7 +108,7 @@ class ApiGenerationPlugin : Plugin<Project> {
                         )
                     })
                 }
-                apiGenTasks.add(task)
+                wsdlTasks.add(task)
             }
         }
 
@@ -110,15 +116,40 @@ class ApiGenerationPlugin : Plugin<Project> {
             val javaExt = project.extensions.findByType(JavaPluginExtension::class.java)
             if (javaExt != null) {
                 val mainSourceSet = javaExt.sourceSets.getByName("main")
-                for (taskProvider in apiGenTasks) {
-                    mainSourceSet.java.srcDir(taskProvider)
 
-                    project.tasks.matching { it.name == "compileJava" }.configureEach {
-                        dependsOn(taskProvider)
-                    }
-                    project.tasks.matching { it.name == "compileKotlin" }.configureEach {
-                        dependsOn(taskProvider)
-                    }
+                // OpenAPI generator nests Java sources under src/main/java inside its output dir.
+                // Wire srcDir to that subdirectory so only source files (not pom.xml etc.) are compiled.
+                for (taskProvider in openApiTasks) {
+                    val javaSourceDir = taskProvider.map { it.outputs.files.singleFile.resolve("src/main/java") }
+                    mainSourceSet.java.srcDir(javaSourceDir)
+                    project.tasks.matching { it.name == "compileJava" }.configureEach { dependsOn(taskProvider) }
+                    project.tasks.matching { it.name == "compileKotlin" }.configureEach { dependsOn(taskProvider) }
+                }
+
+                // CXF wsdl2java writes Java directly into the output dir — no src/main/java nesting.
+                for (taskProvider in wsdlTasks) {
+                    mainSourceSet.java.srcDir(taskProvider)
+                    project.tasks.matching { it.name == "compileJava" }.configureEach { dependsOn(taskProvider) }
+                    project.tasks.matching { it.name == "compileKotlin" }.configureEach { dependsOn(taskProvider) }
+                }
+            }
+
+            // Register the correct IDEA source roots per generation type.
+            project.plugins.withType(IdeaPlugin::class.java) {
+                val ideaModel = project.extensions.getByType(IdeaModel::class.java)
+
+                // OpenAPI: IDEA root is <outputDir>/src/main/java
+                for (taskProvider in openApiTasks) {
+                    val javaSourceDir = taskProvider.get().outputs.files.singleFile.resolve("src/main/java")
+                    ideaModel.module.generatedSourceDirs.add(javaSourceDir)
+                    ideaModel.module.excludeDirs.remove(javaSourceDir)
+                }
+
+                // WSDL: IDEA root is the outputDir directly
+                for (taskProvider in wsdlTasks) {
+                    val outputDir = taskProvider.get().outputs.files.singleFile
+                    ideaModel.module.generatedSourceDirs.add(outputDir)
+                    ideaModel.module.excludeDirs.remove(outputDir)
                 }
             }
         }

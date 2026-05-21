@@ -4,6 +4,8 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.plugins.ide.idea.IdeaPlugin
+import org.gradle.plugins.ide.idea.model.IdeaModel
 
 class SpringOtelLoggingPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -219,6 +221,15 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                 project.tasks.matching { it.name == "processResources" }.configureEach {
                     dependsOn(generateOtelResourcesTask)
                 }
+            }
+
+            // Register the OTEL generated Java directory as an IDEA generated source root
+            // so IntelliJ recognises it without requiring a prior build.
+            project.plugins.withType(IdeaPlugin::class.java) {
+                val ideaModel = project.extensions.getByType(IdeaModel::class.java)
+                val otelJavaDir = project.layout.buildDirectory.dir("generated/sources/otel/java").get().asFile
+                ideaModel.module.generatedSourceDirs.add(otelJavaDir)
+                ideaModel.module.excludeDirs.remove(otelJavaDir)
             }
         }
     }

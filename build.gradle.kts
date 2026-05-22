@@ -76,5 +76,11 @@ gradlePlugin {
             displayName = "MinicDesign Docker Compose Plugin"
             description = "Registers tasks to manage docker-compose configurations per project."
         }
+        register("pact") {
+            id = "com.minicdesign.pact"
+            implementationClass = "com.minicdesign.buildlogic.PactPlugin"
+            displayName = "MinicDesign Pact Plugin"
+            description = "Provides tasks to manage contracts on an open-source Pact Broker."
+        }
     }
 }

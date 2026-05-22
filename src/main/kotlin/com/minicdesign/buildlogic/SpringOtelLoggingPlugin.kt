@@ -193,6 +193,65 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                     public class OtelAutoConfiguration {
                     }
                 """.trimIndent().replace("\r\n", "\n"))
+
+                // MaskingMessageConverter.java
+                comMinicdesignOtelDir.resolve("MaskingMessageConverter.java").writeText("""
+                    package com.minicdesign.otel;
+
+                    import ch.qos.logback.classic.pattern.MessageConverter;
+                    import ch.qos.logback.classic.spi.ILoggingEvent;
+                    import java.util.regex.Matcher;
+                    import java.util.regex.Pattern;
+
+                    public class MaskingMessageConverter extends MessageConverter {
+
+                        private Pattern maskingPattern = null;
+
+                        @Override
+                        public void start() {
+                            String fieldsStr = getContext().getProperty("MASKED_FIELDS");
+                            if (fieldsStr != null && !fieldsStr.trim().isEmpty()) {
+                                String[] fields = fieldsStr.split(",");
+                                StringBuilder regexBuilder = new StringBuilder();
+                                for (String field : fields) {
+                                    field = field.trim();
+                                    if (!field.isEmpty()) {
+                                        if (regexBuilder.length() > 0) {
+                                            regexBuilder.append("|");
+                                        }
+                                        regexBuilder.append(Pattern.quote(field));
+                                    }
+                                }
+                                if (regexBuilder.length() > 0) {
+                                    String pattern = "(\"(?:" + regexBuilder + ")\"\\s*:\\s*\")([^\"]+)(\")|((?:" + regexBuilder + ")\\s*=\\s*)([^,\\}\\s\\]\\)]+)";
+                                    maskingPattern = Pattern.compile(pattern);
+                                }
+                            }
+                            super.start();
+                        }
+
+                        @Override
+                        public String convert(ILoggingEvent event) {
+                            String message = super.convert(event);
+                            if (maskingPattern != null && message != null) {
+                                Matcher matcher = maskingPattern.matcher(message);
+                                if (matcher.find()) {
+                                    StringBuffer sb = new StringBuffer(message.length());
+                                    do {
+                                        if (matcher.group(1) != null) {
+                                            matcher.appendReplacement(sb, Matcher.quoteReplacement(matcher.group(1) + "***" + matcher.group(3)));
+                                        } else if (matcher.group(4) != null) {
+                                            matcher.appendReplacement(sb, Matcher.quoteReplacement(matcher.group(4) + "***"));
+                                        }
+                                    } while (matcher.find());
+                                    matcher.appendTail(sb);
+                                    return sb.toString();
+                                }
+                            }
+                            return message;
+                        }
+                    }
+                """.trimIndent().replace("\r\n", "\n"))
             }
         }
 
@@ -206,6 +265,10 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                 resourcesDir.resolve("logback-spring.xml").writeText("""
                     <?xml version="1.0" encoding="UTF-8"?>
                     <configuration>
+                        <springProperty scope="context" name="MASKED_FIELDS" source="logging.mask.fields" defaultValue="password,creditCard,ssn,email"/>
+                        <conversionRule conversionWord="msg" converterClass="com.minicdesign.otel.MaskingMessageConverter" />
+                        <conversionRule conversionWord="m" converterClass="com.minicdesign.otel.MaskingMessageConverter" />
+                        
                         <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
                         <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 

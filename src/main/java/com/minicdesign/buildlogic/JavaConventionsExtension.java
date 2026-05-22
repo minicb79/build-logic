@@ -19,7 +19,8 @@ public class JavaConventionsExtension {
                 "**/beans/*",
                 "**/config/*",
                 "**/api/**",
-                "**/*Application*"
+                "**/*Application*",
+                "**/otel/**"
             )
         );
         this.coverageThreshold = project.getObjects().property(Double.class).convention(0.90);

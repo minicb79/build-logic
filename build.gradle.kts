@@ -44,7 +44,13 @@ gradlePlugin {
             id = "com.minicdesign.spring-service"
             implementationClass = "com.minicdesign.buildlogic.SpringServicePlugin"
             displayName = "MinicDesign Spring Service Conventions Plugin"
-            description = "Applies standard conventions for Spring Boot Web services in Java/Kotlin."
+            description = "Applies standard conventions for Spring Boot Web services in Java."
+        }
+        register("spring-service-kotlin") {
+            id = "com.minicdesign.spring-service-kotlin"
+            implementationClass = "com.minicdesign.buildlogic.SpringServiceKotlinPlugin"
+            displayName = "MinicDesign Spring Service Kotlin Conventions Plugin"
+            description = "Applies standard conventions for Spring Boot Web services in Kotlin."
         }
         register("otel-base") {
             id = "com.minicdesign.otel-base"

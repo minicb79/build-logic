@@ -6,18 +6,14 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 
 class SpringServicePlugin : Plugin<Project> {
     override fun apply(project: Project) {
-        // 1. Apply local convention plugins
+        // 1. Apply local convention plugins (Java default)
         project.plugins.apply("com.minicdesign.java-conventions")
-        project.plugins.apply("com.minicdesign.kotlin-conventions")
 
         // 2. Apply Spring Boot and Spring Dependency Management plugins
         project.plugins.apply("org.springframework.boot")
         project.plugins.apply("io.spring.dependency-management")
 
-        // 3. Apply Kotlin Spring compiler plugin (opens Spring beans)
-        project.plugins.apply("org.jetbrains.kotlin.plugin.spring")
-
-        // 4. Configure standard dependencies for Rest APIs
+        // 3. Configure standard dependencies for Rest APIs
         val catalogs = project.extensions.findByType(VersionCatalogsExtension::class.java)
         val libs = catalogs?.find("libs")?.orElse(null)
 
@@ -33,18 +29,6 @@ class SpringServicePlugin : Plugin<Project> {
             "org.springframework.boot:spring-boot-starter-restclient"
         }
 
-        val kotlinReflectDep = if (libs != null && libs.findLibrary("kotlin-reflect").isPresent) {
-            libs.findLibrary("kotlin-reflect").get()
-        } else {
-            "org.jetbrains.kotlin:kotlin-reflect"
-        }
-
-        val jacksonKotlinDep = if (libs != null && libs.findLibrary("jackson-module-kotlin").isPresent) {
-            libs.findLibrary("jackson-module-kotlin").get()
-        } else {
-            "com.fasterxml.jackson.module:jackson-module-kotlin"
-        }
-
         val springTestDep = if (libs != null && libs.findLibrary("spring-boot-starter-test").isPresent) {
             libs.findLibrary("spring-boot-starter-test").get()
         } else {
@@ -54,8 +38,6 @@ class SpringServicePlugin : Plugin<Project> {
         project.dependencies.apply {
             add("implementation", springWebDep)
             add("implementation", springRestClientDep)
-            add("implementation", kotlinReflectDep)
-            add("implementation", jacksonKotlinDep)
             add("testImplementation", springTestDep)
         }
     }

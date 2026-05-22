@@ -3,7 +3,6 @@ package com.minicdesign.buildlogic;
 import com.diffplug.gradle.spotless.SpotlessExtension;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
-import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.ConfigurationContainer;
 import org.gradle.api.artifacts.VersionCatalog;
 import org.gradle.api.artifacts.VersionCatalogsExtension;
@@ -42,7 +41,7 @@ public class JavaConventionsPlugin implements Plugin<Project> {
 
         // 4. Configure Java compilation options (UTF-8, warnings as errors, standard lints)
         project.getTasks().withType(JavaCompile.class).configureEach(compile -> {
-            compile.getOptions().getCompilerArgs().addAll(Arrays.asList("-Xlint:all", "-Xlint:-dangling-doc-comments", "-Werror"));
+            compile.getOptions().getCompilerArgs().addAll(Arrays.asList("-Xlint:all", "-Xlint:-dangling-doc-comments", "-Xlint:-processing", "-Werror"));
             compile.getOptions().setEncoding("UTF-8");
         });
 
@@ -128,6 +127,19 @@ public class JavaConventionsPlugin implements Plugin<Project> {
                 project.getDependencies().add("testImplementation", "org.junit.jupiter:junit-jupiter:5.10.2");
                 project.getDependencies().add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:1.10.2");
             }
+
+            // Configure Lombok
+            Object lombokDep = "org.projectlombok:lombok:1.18.46";
+            if (catalogs != null) {
+                VersionCatalog libs = catalogs.find("libs").orElse(null);
+                if (libs != null && libs.findLibrary("lombok").isPresent()) {
+                    lombokDep = libs.findLibrary("lombok").get();
+                }
+            }
+            project.getDependencies().add("compileOnly", lombokDep);
+            project.getDependencies().add("annotationProcessor", lombokDep);
+            project.getDependencies().add("testCompileOnly", lombokDep);
+            project.getDependencies().add("testAnnotationProcessor", lombokDep);
 
             // Configure Java Toolchain version
             javaExt.getToolchain().getLanguageVersion().set(

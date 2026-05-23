@@ -27,9 +27,32 @@ abstract class StartWiremockTask : DefaultTask() {
         val rootPath = rootDir.get().asFile.absolutePath
         val portValue = port.get()
 
-        val server = WireMockServer(options().port(portValue).usingFilesUnderDirectory(rootPath))
+        val httpsEnabled = project.hasProperty("wiremock.https") &&
+                project.property("wiremock.https").toString() == "true"
+
+        val options = options().port(portValue).usingFilesUnderDirectory(rootPath)
+
+        if (httpsEnabled) {
+            val keystoreFile = project.rootProject.file("order-service/src/main/resources/certificates/keystore.p12")
+            val truststoreFile = project.rootProject.file("order-service/src/main/resources/certificates/truststore.p12")
+
+            options.httpsPort(8443)
+            options.keystorePath(keystoreFile.absolutePath)
+            options.keystorePassword("changeit")
+            options.keystoreType("PKCS12")
+            options.trustStorePath(truststoreFile.absolutePath)
+            options.trustStorePassword("changeit")
+            options.trustStoreType("PKCS12")
+            options.needClientAuth(true)
+        }
+
+        val server = WireMockServer(options)
         server.start()
-        println("WireMock server started on port $portValue using root directory $rootPath")
+        if (httpsEnabled) {
+            println("WireMock server started on port $portValue (HTTP) and 8443 (HTTPS) using root directory $rootPath")
+        } else {
+            println("WireMock server started on port $portValue (HTTP) using root directory $rootPath")
+        }
 
         val background = project.hasProperty("wiremock.background") &&
                 project.property("wiremock.background").toString() == "true"

@@ -24,6 +24,12 @@ dependencies {
     implementation(libs.dependencyManagement.gradlePlugin)
     // We add the Wiremock standalone plugin library for our custom tasks
     implementation(libs.wiremock.standalone)
+    // We add the ArchUnit gradle plugin for architectural validation tasks
+    implementation(libs.archunit.gradlePlugin) {
+        exclude(group = "com.tngtech.archunit")
+    }
+    implementation("com.tngtech.archunit:archunit:1.4.2")
+    implementation("com.tngtech.archunit:archunit-junit5-api:1.4.2")
 }
 
 gradlePlugin {
@@ -87,6 +93,14 @@ gradlePlugin {
             implementationClass = "com.minicdesign.buildlogic.PactPlugin"
             displayName = "MinicDesign Pact Plugin"
             description = "Provides tasks to manage contracts on an open-source Pact Broker."
+        }
+    }
+}
+
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "com.tngtech.archunit") {
+            useVersion("1.4.2")
         }
     }
 }

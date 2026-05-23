@@ -26,7 +26,7 @@ class DockerComposePlugin : Plugin<Project> {
                     val componentName = subDir.name
                     val capitalizedComponent = componentName.replaceFirstChar { it.uppercase() }
 
-                    project.tasks.register("check${capitalizedComponent}Container", CheckDockerComposeTask::class.java) {
+                    project.tasks.register("check${capitalizedComponent}", CheckDockerComposeTask::class.java) {
                         group = "docker"
                         description = "Checks status of Docker Compose services for $componentName."
                         this.composeFile.set(composeFile)
@@ -36,7 +36,7 @@ class DockerComposePlugin : Plugin<Project> {
                         this.dockerComposePath.set(extension.dockerComposePath)
                     }
 
-                    project.tasks.register("start${capitalizedComponent}Container", StartDockerComposeTask::class.java) {
+                    project.tasks.register("start${capitalizedComponent}", StartDockerComposeTask::class.java) {
                         group = "docker"
                         description = "Starts Docker Compose services for $componentName."
                         this.composeFile.set(composeFile)
@@ -46,7 +46,7 @@ class DockerComposePlugin : Plugin<Project> {
                         this.dockerComposePath.set(extension.dockerComposePath)
                     }
 
-                    project.tasks.register("stop${capitalizedComponent}Container", StopDockerComposeTask::class.java) {
+                    project.tasks.register("stop${capitalizedComponent}", StopDockerComposeTask::class.java) {
                         group = "docker"
                         description = "Stops Docker Compose services for $componentName."
                         this.composeFile.set(composeFile)

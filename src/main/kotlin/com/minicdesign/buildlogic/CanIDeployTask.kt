@@ -7,6 +7,9 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import javax.inject.Inject
 
+import org.gradle.work.DisableCachingByDefault
+
+@DisableCachingByDefault(because = "Not worth caching")
 abstract class CanIDeployTask : DefaultTask() {
     @get:Inject
     abstract val execOperations: ExecOperations

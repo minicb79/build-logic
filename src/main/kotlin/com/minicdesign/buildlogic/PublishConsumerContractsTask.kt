@@ -9,6 +9,11 @@ import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import javax.inject.Inject
 
+import org.gradle.work.DisableCachingByDefault
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+
+@DisableCachingByDefault(because = "Not worth caching")
 abstract class PublishConsumerContractsTask : DefaultTask() {
     @get:Inject
     abstract val execOperations: ExecOperations
@@ -23,6 +28,7 @@ abstract class PublishConsumerContractsTask : DefaultTask() {
     abstract val branch: Property<String>
 
     @get:InputDirectory
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val pactFilesDir: DirectoryProperty
 
     @TaskAction

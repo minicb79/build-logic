@@ -91,7 +91,7 @@ public class JavaConventionsPlugin implements Plugin<Project> {
         SpotlessExtension spotless = project.getExtensions().getByType(SpotlessExtension.class);
         spotless.java(java -> {
             java.targetExclude("build/generated/**");
-            java.googleJavaFormat("1.24.0");
+            java.eclipse();
             java.removeUnusedImports();
             java.trimTrailingWhitespace();
             java.endWithNewline();

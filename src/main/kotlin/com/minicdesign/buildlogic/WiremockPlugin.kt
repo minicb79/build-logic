@@ -27,13 +27,13 @@ class WiremockPlugin : Plugin<Project> {
             outputDir.set(extension.rootDir)
         }
 
-        project.tasks.register("startWiremock", StartWiremockTask::class.java) {
+        project.tasks.register("startWiremockLocal", StartWiremockTask::class.java) {
             port.set(extension.port)
             rootDir.set(extension.rootDir)
             dependsOn(mergeWiremockSources)
         }
 
-        project.tasks.register("stopWiremock", StopWiremockTask::class.java)
+        project.tasks.register("stopWiremockLocal", StopWiremockTask::class.java)
 
         project.tasks.register("publishWiremock", PublishWiremockTask::class.java) {
             val urlProp = project.providers.gradleProperty("wiremock.serverUrl")

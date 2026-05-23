@@ -91,6 +91,7 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                     import jakarta.servlet.ServletException;
                     import jakarta.servlet.http.HttpServletRequest;
                     import jakarta.servlet.http.HttpServletResponse;
+                    import org.springframework.beans.factory.annotation.Value;
                     import org.springframework.stereotype.Component;
                     import org.springframework.web.filter.OncePerRequestFilter;
                     import java.io.IOException;
@@ -99,9 +100,11 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                     public class TraceIdFilter extends OncePerRequestFilter {
 
                         private final Tracer tracer;
+                        private final String headerName;
 
-                        public TraceIdFilter(Tracer tracer) {
+                        public TraceIdFilter(Tracer tracer, @Value("${"$"}{logging.trace.header-name:x-trace-id}") String headerName) {
                             this.tracer = tracer;
+                            this.headerName = headerName;
                         }
 
                         @Override
@@ -109,7 +112,7 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                                 throws ServletException, IOException {
                             String traceId = getTraceId();
                             if (traceId != null) {
-                                response.setHeader("X-Trace-Id", traceId);
+                                response.setHeader(headerName, traceId);
                             }
                             filterChain.doFilter(request, response);
                         }
@@ -176,10 +179,146 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                     }
                 """.trimIndent().replace("\r\n", "\n"))
 
+                // CustomHeaderPropagator.java
+                comMinicdesignOtelDir.resolve("CustomHeaderPropagator.java").writeText("""
+                    package com.minicdesign.otel;
+
+                    import io.opentelemetry.api.trace.Span;
+                    import io.opentelemetry.api.trace.SpanContext;
+                    import io.opentelemetry.api.trace.TraceFlags;
+                    import io.opentelemetry.api.trace.TraceState;
+                    import io.opentelemetry.context.Context;
+                    import io.opentelemetry.context.propagation.TextMapGetter;
+                    import io.opentelemetry.context.propagation.TextMapPropagator;
+                    import io.opentelemetry.context.propagation.TextMapSetter;
+                    import org.springframework.util.StringUtils;
+
+                    import java.util.Collection;
+                    import java.util.Collections;
+                    import java.util.Locale;
+
+                    public class CustomHeaderPropagator implements TextMapPropagator {
+
+                        private final String headerName;
+
+                        public CustomHeaderPropagator(String headerName) {
+                            this.headerName = headerName;
+                        }
+
+                        @Override
+                        public Collection<String> fields() {
+                            return Collections.singletonList(headerName);
+                        }
+
+                        @Override
+                        public <C> void inject(Context context, C carrier, TextMapSetter<C> setter) {
+                            if (context == null || setter == null) {
+                                return;
+                            }
+                            SpanContext spanContext = Span.fromContext(context).getSpanContext();
+                            if (!spanContext.isValid()) {
+                                return;
+                            }
+                            setter.set(carrier, headerName, spanContext.getTraceId());
+                        }
+
+                        @Override
+                        public <C> Context extract(Context context, C carrier, TextMapGetter<C> getter) {
+                            if (context == null || getter == null) {
+                                return Context.root();
+                            }
+
+                            String rawTraceId = getter.get(carrier, headerName);
+                            if (!StringUtils.hasText(rawTraceId)) {
+                                return context;
+                            }
+
+                            String cleanTraceId = rawTraceId.toLowerCase(Locale.ROOT).replaceAll("[^0-9a-f]", "");
+                            if (!StringUtils.hasText(cleanTraceId)) {
+                                return context;
+                            }
+
+                            String paddedTraceId = cleanTraceId;
+                            if (paddedTraceId.length() < 32) {
+                                paddedTraceId = "0".repeat(32 - paddedTraceId.length()) + paddedTraceId;
+                            }
+                            if (paddedTraceId.length() > 32) {
+                                paddedTraceId = paddedTraceId.substring(0, 32);
+                            }
+
+                            String genericSpanId = "0000000000000001";
+
+                            SpanContext spanContext = SpanContext.createFromRemoteParent(
+                                    paddedTraceId,
+                                    genericSpanId,
+                                    TraceFlags.getDefault(),
+                                    TraceState.getDefault()
+                            );
+
+                            return context.with(Span.wrap(spanContext));
+                        }
+                    }
+                """.trimIndent().replace("\r\n", "\n"))
+
+                // GlobalExceptionHandler.java
+                comMinicdesignOtelDir.resolve("GlobalExceptionHandler.java").writeText("""
+                    package com.minicdesign.otel;
+
+                    import io.micrometer.tracing.TraceContext;
+                    import io.micrometer.tracing.Tracer;
+                    import org.slf4j.Logger;
+                    import org.slf4j.LoggerFactory;
+                    import org.springframework.http.HttpStatus;
+                    import org.springframework.http.ProblemDetail;
+                    import org.springframework.web.bind.annotation.ExceptionHandler;
+                    import org.springframework.web.bind.annotation.RestControllerAdvice;
+                    import org.springframework.web.context.request.WebRequest;
+
+                    @RestControllerAdvice
+                    public class GlobalExceptionHandler {
+
+                        private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+                        private final Tracer tracer;
+
+                        public GlobalExceptionHandler(Tracer tracer) {
+                            this.tracer = tracer;
+                        }
+
+                        @ExceptionHandler(Exception.class)
+                        public ProblemDetail handleGenericException(Exception ex, WebRequest request) {
+                            log.error("Unhandled exception", ex);
+                            ProblemDetail problem = ProblemDetail.forStatusAndDetail(
+                                    HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred");
+                            enrichWithTraceId(problem);
+                            return problem;
+                        }
+
+                        protected void enrichWithTraceId(ProblemDetail problem) {
+                            String traceId = resolveTraceId();
+                            if (traceId != null) {
+                                problem.setProperty("traceId", traceId);
+                            }
+                        }
+
+                        private String resolveTraceId() {
+                            if (tracer == null || tracer.currentTraceContext() == null) {
+                                return null;
+                            }
+                            TraceContext ctx = tracer.currentTraceContext().context();
+                            return ctx != null ? ctx.traceId() : null;
+                        }
+                    }
+                """.trimIndent().replace("\r\n", "\n"))
+
                 // OtelAutoConfiguration.java
                 comMinicdesignOtelDir.resolve("OtelAutoConfiguration.java").writeText("""
                     package com.minicdesign.otel;
 
+                    import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+                    import io.opentelemetry.context.propagation.TextMapPropagator;
+                    import org.springframework.beans.factory.annotation.Value;
+                    import org.springframework.context.annotation.Bean;
                     import org.springframework.context.annotation.Configuration;
                     import org.springframework.context.annotation.Import;
 
@@ -188,9 +327,18 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                         InstallOpenTelemetryAppender.class,
                         TraceIdFilter.class,
                         ContextPropagationConfiguration.class,
-                        OpenTelemetryConfiguration.class
+                        OpenTelemetryConfiguration.class,
+                        GlobalExceptionHandler.class
                     })
                     public class OtelAutoConfiguration {
+
+                        @Bean
+                        public TextMapPropagator customTextMapPropagator(@Value("${"$"}{logging.trace.header-name:x-trace-id}") String headerName) {
+                            return TextMapPropagator.composite(
+                                    W3CTraceContextPropagator.getInstance(),
+                                    new CustomHeaderPropagator(headerName)
+                            );
+                        }
                     }
                 """.trimIndent().replace("\r\n", "\n"))
 

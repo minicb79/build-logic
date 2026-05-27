@@ -40,7 +40,7 @@ abstract class StartWiremockTask : DefaultTask() {
             options.keystorePath(keystoreFile.absolutePath)
             options.keystorePassword("changeit")
             options.keystoreType("PKCS12")
-            options.trustStorePath(truststoreFile.absolutePath)
+            options.trustStorePath(keystoreFile.absolutePath)
             options.trustStorePassword("changeit")
             options.trustStoreType("PKCS12")
             options.needClientAuth(true)

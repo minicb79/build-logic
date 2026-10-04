@@ -19,8 +19,12 @@ import org.gradle.testing.jacoco.plugins.JacocoPluginExtension;
 import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification;
 import org.gradle.testing.jacoco.tasks.JacocoReport;
 
+import java.io.File;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class JavaConventionsPlugin implements Plugin<Project> {
     @Override
@@ -78,6 +82,15 @@ public class JavaConventionsPlugin implements Plugin<Project> {
         configurations.getByName("testIntegrationRuntimeOnly")
             .extendsFrom(configurations.getByName("testRuntimeOnly"));
 
+        // Include service wiremock directory in testIntegration resources if present
+        File projectWiremock = project.file("wiremock");
+        File rootWiremock = project.getRootProject() != null ? project.getRootProject().file("wiremock") : null;
+        if (projectWiremock.exists() && projectWiremock.isDirectory()) {
+            testIntegration.getResources().srcDir(projectWiremock);
+        } else if (rootWiremock != null && rootWiremock.exists() && rootWiremock.isDirectory()) {
+            testIntegration.getResources().srcDir(rootWiremock);
+        }
+
         // Register integrationTest execution task
         project.getTasks().register("integrationTest", Test.class, task -> {
             task.setDescription("Runs integration tests.");
@@ -85,6 +98,39 @@ public class JavaConventionsPlugin implements Plugin<Project> {
             task.setTestClassesDirs(testIntegration.getOutput().getClassesDirs());
             task.setClasspath(testIntegration.getRuntimeClasspath());
             task.useJUnitPlatform();
+
+            // Configure WireMock search paths
+            List<File> wiremockSearchDirs = new ArrayList<>();
+            if (projectWiremock.exists() && projectWiremock.isDirectory()) {
+                wiremockSearchDirs.add(projectWiremock);
+            }
+            if (rootWiremock != null && rootWiremock.exists() && rootWiremock.isDirectory() && !wiremockSearchDirs.contains(rootWiremock)) {
+                wiremockSearchDirs.add(rootWiremock);
+            }
+            File testIntRes = project.file("src/testIntegration/resources");
+            if (testIntRes.exists() && testIntRes.isDirectory()) {
+                File testIntWm = new File(testIntRes, "wiremock");
+                if (testIntWm.exists() && testIntWm.isDirectory()) {
+                    wiremockSearchDirs.add(testIntWm);
+                } else if (new File(testIntRes, "mappings").exists()) {
+                    wiremockSearchDirs.add(testIntRes);
+                }
+            }
+
+            if (!wiremockSearchDirs.isEmpty()) {
+                File primaryDir = wiremockSearchDirs.get(0);
+                task.systemProperty("wiremock.root-dir", primaryDir.getAbsolutePath());
+                task.systemProperty("wiremock.dir", primaryDir.getAbsolutePath());
+                String searchPaths = wiremockSearchDirs.stream().map(File::getAbsolutePath).collect(Collectors.joining(","));
+                task.systemProperty("wiremock.search-dirs", searchPaths);
+            }
+        });
+
+        // Register testIntegration alias for integrationTest
+        project.getTasks().register("testIntegration", task -> {
+            task.setDescription("Alias for integrationTest.");
+            task.setGroup("verification");
+            task.dependsOn("integrationTest");
         });
 
         // 7. Configure Spotless formatting for Java
@@ -98,7 +144,7 @@ public class JavaConventionsPlugin implements Plugin<Project> {
         });
 
         // 8. Configure IntelliJ IDEA.  Source root registration for generated code is handled
-        // explicitly by ApiGenerationPlugin and SpringOtelLoggingPlugin, which know the exact
+        // explicitly by OpenApiCodegenPlugin and SpringOtelLoggingPlugin, which know the exact
         // output directory structure for each generator type.
         project.getPlugins().withType(IdeaPlugin.class, ideaPlugin -> {
             IdeaModel ideaModel = project.getExtensions().getByType(IdeaModel.class);
@@ -145,6 +191,12 @@ public class JavaConventionsPlugin implements Plugin<Project> {
             javaExt.getToolchain().getLanguageVersion().set(
                 JavaLanguageVersion.of(extension.getJavaVersion().get())
             );
+
+            // Configure Java Module Path (JPMS) if requested or if module-info.java exists
+            boolean hasModuleInfo = project.file("src/main/java/module-info.java").exists();
+            if (extension.getModular().get() || hasModuleInfo) {
+                javaExt.getModularity().getInferModulePath().set(true);
+            }
 
             // Configure Jacoco Tool Version
             JacocoPluginExtension jacocoExt = project.getExtensions().getByType(JacocoPluginExtension.class);
@@ -202,6 +254,34 @@ public class JavaConventionsPlugin implements Plugin<Project> {
 
             project.getTasks().named("integrationTest", Test.class).configure(it -> {
                 it.finalizedBy(project.getTasks().withType(JacocoReport.class));
+
+                // WireMock search dirs post-evaluation check
+                List<File> wiremockSearchDirs = new ArrayList<>();
+                if (projectWiremock.exists() && projectWiremock.isDirectory()) {
+                    testIntegration.getResources().srcDir(projectWiremock);
+                    wiremockSearchDirs.add(projectWiremock);
+                }
+                if (rootWiremock != null && rootWiremock.exists() && rootWiremock.isDirectory() && !wiremockSearchDirs.contains(rootWiremock)) {
+                    testIntegration.getResources().srcDir(rootWiremock);
+                    wiremockSearchDirs.add(rootWiremock);
+                }
+                File testIntRes = project.file("src/testIntegration/resources");
+                if (testIntRes.exists() && testIntRes.isDirectory()) {
+                    File testIntWm = new File(testIntRes, "wiremock");
+                    if (testIntWm.exists() && testIntWm.isDirectory()) {
+                        wiremockSearchDirs.add(testIntWm);
+                    } else if (new File(testIntRes, "mappings").exists()) {
+                        wiremockSearchDirs.add(testIntRes);
+                    }
+                }
+
+                if (!wiremockSearchDirs.isEmpty()) {
+                    File primaryDir = wiremockSearchDirs.get(0);
+                    it.systemProperty("wiremock.root-dir", primaryDir.getAbsolutePath());
+                    it.systemProperty("wiremock.dir", primaryDir.getAbsolutePath());
+                    String searchPaths = wiremockSearchDirs.stream().map(File::getAbsolutePath).collect(Collectors.joining(","));
+                    it.systemProperty("wiremock.search-dirs", searchPaths);
+                }
             });
 
             project.getTasks().named("check").configure(check -> {

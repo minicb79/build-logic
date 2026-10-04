@@ -9,6 +9,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
+import java.io.File
 
 class KotlinConventionsPlugin : Plugin<Project> {
     override fun apply(project: Project) {
@@ -58,6 +59,15 @@ class KotlinConventionsPlugin : Plugin<Project> {
         configurations.getByName("testIntegrationRuntimeOnly")
             .extendsFrom(configurations.getByName("testRuntimeOnly"))
 
+        // Include service wiremock directory in testIntegration resources if present
+        val projectWiremock = project.file("wiremock")
+        val rootWiremock = project.rootProject.file("wiremock")
+        if (projectWiremock.exists() && projectWiremock.isDirectory) {
+            testIntegration.resources.srcDir(projectWiremock)
+        } else if (rootWiremock.exists() && rootWiremock.isDirectory) {
+            testIntegration.resources.srcDir(rootWiremock)
+        }
+
         // Register integrationTest execution task
         project.tasks.register("integrationTest", Test::class.java, object : Action<Test> {
             override fun execute(task: Test) {
@@ -66,8 +76,40 @@ class KotlinConventionsPlugin : Plugin<Project> {
                 task.testClassesDirs = testIntegration.output.classesDirs
                 task.classpath = testIntegration.runtimeClasspath
                 task.useJUnitPlatform()
+
+                val wiremockSearchDirs = mutableListOf<File>()
+                if (projectWiremock.exists() && projectWiremock.isDirectory) {
+                    wiremockSearchDirs.add(projectWiremock)
+                }
+                if (rootWiremock.exists() && rootWiremock.isDirectory && !wiremockSearchDirs.contains(rootWiremock)) {
+                    wiremockSearchDirs.add(rootWiremock)
+                }
+                val testIntRes = project.file("src/testIntegration/resources")
+                if (testIntRes.exists() && testIntRes.isDirectory) {
+                    val testIntWm = testIntRes.resolve("wiremock")
+                    if (testIntWm.exists() && testIntWm.isDirectory) {
+                        wiremockSearchDirs.add(testIntWm)
+                    } else if (testIntRes.resolve("mappings").exists()) {
+                        wiremockSearchDirs.add(testIntRes)
+                    }
+                }
+
+                if (wiremockSearchDirs.isNotEmpty()) {
+                    val primaryDir = wiremockSearchDirs.first()
+                    task.systemProperty("wiremock.root-dir", primaryDir.absolutePath)
+                    task.systemProperty("wiremock.dir", primaryDir.absolutePath)
+                    val searchPaths = wiremockSearchDirs.joinToString(",") { it.absolutePath }
+                    task.systemProperty("wiremock.search-dirs", searchPaths)
+                }
             }
         })
+
+        // Register testIntegration alias for integrationTest
+        project.tasks.register("testIntegration") {
+            description = "Alias for integrationTest."
+            group = "verification"
+            dependsOn("integrationTest")
+        }
 
         // 6. Post-evaluation setup (for user-customized extension values)
         project.afterEvaluate {
@@ -100,13 +142,41 @@ class KotlinConventionsPlugin : Plugin<Project> {
             }
 
             // Finalize unit tests and integration tests by generating report if Jacoco is applied
-            if (project.plugins.hasPlugin("jacoco")) {
-                project.tasks.named("integrationTest", Test::class.java).configure(object : Action<Test> {
-                    override fun execute(testTask: Test) {
+            project.tasks.named("integrationTest", Test::class.java).configure(object : Action<Test> {
+                override fun execute(testTask: Test) {
+                    if (project.plugins.hasPlugin("jacoco")) {
                         testTask.finalizedBy(project.tasks.withType(org.gradle.testing.jacoco.tasks.JacocoReport::class.java))
                     }
-                })
-            }
+
+                    // WireMock search dirs post-evaluation check
+                    val wiremockSearchDirs = mutableListOf<File>()
+                    if (projectWiremock.exists() && projectWiremock.isDirectory) {
+                        testIntegration.resources.srcDir(projectWiremock)
+                        wiremockSearchDirs.add(projectWiremock)
+                    }
+                    if (rootWiremock.exists() && rootWiremock.isDirectory && !wiremockSearchDirs.contains(rootWiremock)) {
+                        testIntegration.resources.srcDir(rootWiremock)
+                        wiremockSearchDirs.add(rootWiremock)
+                    }
+                    val testIntRes = project.file("src/testIntegration/resources")
+                    if (testIntRes.exists() && testIntRes.isDirectory) {
+                        val testIntWm = testIntRes.resolve("wiremock")
+                        if (testIntWm.exists() && testIntWm.isDirectory) {
+                            wiremockSearchDirs.add(testIntWm)
+                        } else if (testIntRes.resolve("mappings").exists()) {
+                            wiremockSearchDirs.add(testIntRes)
+                        }
+                    }
+
+                    if (wiremockSearchDirs.isNotEmpty()) {
+                        val primaryDir = wiremockSearchDirs.first()
+                        testTask.systemProperty("wiremock.root-dir", primaryDir.absolutePath)
+                        testTask.systemProperty("wiremock.dir", primaryDir.absolutePath)
+                        val searchPaths = wiremockSearchDirs.joinToString(",") { it.absolutePath }
+                        testTask.systemProperty("wiremock.search-dirs", searchPaths)
+                    }
+                }
+            })
 
             // Hook integrationTest and check task lifecycle
             project.tasks.named("check").configure(object : Action<Task> {

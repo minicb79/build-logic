@@ -10,6 +10,7 @@ public class JavaConventionsExtension {
     private final Property<Integer> javaVersion;
     private final ListProperty<String> jacocoExclusionPatterns;
     private final Property<Double> coverageThreshold;
+    private final Property<Boolean> modular;
 
     public JavaConventionsExtension(Project project) {
         this.javaVersion = project.getObjects().property(Integer.class).convention(25);
@@ -24,6 +25,7 @@ public class JavaConventionsExtension {
             )
         );
         this.coverageThreshold = project.getObjects().property(Double.class).convention(0.90);
+        this.modular = project.getObjects().property(Boolean.class).convention(false);
     }
 
     public Property<Integer> getJavaVersion() {
@@ -36,5 +38,9 @@ public class JavaConventionsExtension {
 
     public Property<Double> getCoverageThreshold() {
         return coverageThreshold;
+    }
+
+    public Property<Boolean> getModular() {
+        return modular;
     }
 }

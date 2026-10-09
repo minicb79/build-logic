@@ -34,6 +34,9 @@ abstract class InfraInitSecretsTask : DefaultTask() {
     @get:Input
     abstract val flociPort: Property<Int>
 
+    @get:Input
+    abstract val flociEndpoint: Property<String>
+
     init {
         group = "infra"
         description = "Phase 1: Provisions Secrets Manager placeholders via Terraform and checks secret initialization."
@@ -50,9 +53,10 @@ abstract class InfraInitSecretsTask : DefaultTask() {
         val env = targetEnvironment.get()
         val moduleTarget = secretsModule.get()
         val port = flociPort.get()
+        val endpoint = flociEndpoint.get().trimEnd('/')
 
         val awsEnv = mapOf(
-            "AWS_ENDPOINT_URL" to "http://localhost:$port",
+            "AWS_ENDPOINT_URL" to endpoint,
             "AWS_DEFAULT_REGION" to "us-east-1",
             "AWS_ACCESS_KEY_ID" to "mock_key",
             "AWS_SECRET_ACCESS_KEY" to "mock_secret"
@@ -78,7 +82,10 @@ abstract class InfraInitSecretsTask : DefaultTask() {
 
         // 2. Targeted apply for secrets module
         val varFile = tfDir.resolve("environments/$env.tfvars")
-        val applyArgs = mutableListOf(tf, "apply", "-target=$moduleTarget", "-auto-approve")
+        val applyArgs = mutableListOf(
+            tf, "apply", "-target=$moduleTarget", "-auto-approve",
+            "-var=floci_endpoint=$endpoint"
+        )
         if (varFile.exists()) {
             applyArgs.addAll(listOf("-var-file", varFile.absolutePath))
         }
@@ -107,7 +114,7 @@ abstract class InfraInitSecretsTask : DefaultTask() {
         logger.lifecycle("   ./infra/scripts/manage-secrets.sh $env")
         logger.lifecycle("")
         logger.lifecycle("Option B: Use AWS CLI directly against Floci:")
-        logger.lifecycle("   aws --endpoint-url=http://localhost:$port secretsmanager put-secret-value \\")
+        logger.lifecycle("   aws --endpoint-url=$endpoint secretsmanager put-secret-value \\")
         logger.lifecycle("       --secret-id \"/$env/${project.name}/database\" \\")
         logger.lifecycle("       --secret-string '{\"username\":\"admin\",\"password\":\"<YOUR_PASSWORD>\"}'")
         logger.lifecycle("================================================================================")

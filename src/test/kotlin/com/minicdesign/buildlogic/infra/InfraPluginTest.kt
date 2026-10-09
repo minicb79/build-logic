@@ -23,6 +23,10 @@ class InfraPluginTest {
         assertEquals("minicdesign.com", extension.domainName.get())
         assertEquals(4566, extension.flociPort.get())
         assertEquals(8080, extension.ingressPort.get())
+        assertEquals("localhost", extension.flociHost.get())
+        assertEquals("http://localhost:4566", extension.flociEndpoint.get())
+        assertEquals("localhost", extension.ingressHost.get())
+        assertEquals(false, extension.remoteServer.get())
         assertTrue(extension.syncOpenApiScopes.get())
         assertTrue(extension.persistentState.get())
 
@@ -30,6 +34,7 @@ class InfraPluginTest {
         assertNotNull(project.tasks.findByName("flociStop"), "flociStop task should be registered")
         assertNotNull(project.tasks.findByName("flociStatus"), "flociStatus task should be registered")
         assertNotNull(project.tasks.findByName("infraConfigureHosts"), "infraConfigureHosts task should be registered")
+        assertNotNull(project.tasks.findByName("infraTunnel"), "infraTunnel task should be registered")
         assertNotNull(project.tasks.findByName("syncOpenApiScopes"), "syncOpenApiScopes task should be registered")
         assertNotNull(project.tasks.findByName("infraInitSecrets"), "infraInitSecrets task should be registered")
         assertNotNull(project.tasks.findByName("infraApply"), "infraApply task should be registered")
@@ -93,4 +98,3 @@ class InfraPluginTest {
     }
 
 }
-

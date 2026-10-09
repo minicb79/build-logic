@@ -31,6 +31,9 @@ abstract class InfraDestroyTask : DefaultTask() {
     @get:Input
     abstract val flociPort: Property<Int>
 
+    @get:Input
+    abstract val flociEndpoint: Property<String>
+
     init {
         group = "infra"
         description = "Destroys Terraform-managed mock cloud resources in Floci."
@@ -47,16 +50,20 @@ abstract class InfraDestroyTask : DefaultTask() {
         val tf = terraformPath.get()
         val env = targetEnvironment.get()
         val port = flociPort.get()
+        val endpoint = flociEndpoint.get().trimEnd('/')
 
         val awsEnv = mapOf(
-            "AWS_ENDPOINT_URL" to "http://localhost:$port",
+            "AWS_ENDPOINT_URL" to endpoint,
             "AWS_DEFAULT_REGION" to "us-east-1",
             "AWS_ACCESS_KEY_ID" to "mock_key",
             "AWS_SECRET_ACCESS_KEY" to "mock_secret"
         )
 
         val varFile = tfDir.resolve("environments/$env.tfvars")
-        val destroyArgs = mutableListOf(tf, "destroy", "-auto-approve")
+        val destroyArgs = mutableListOf(
+            tf, "destroy", "-auto-approve",
+            "-var=floci_endpoint=$endpoint"
+        )
         if (varFile.exists()) {
             destroyArgs.addAll(listOf("-var-file", varFile.absolutePath))
         }

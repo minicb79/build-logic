@@ -31,9 +31,12 @@ abstract class InfraApplyTask : DefaultTask() {
     @get:Input
     abstract val flociPort: Property<Int>
 
+    @get:Input
+    abstract val flociEndpoint: Property<String>
+
     init {
         group = "infra"
-        description = "Phase 2: Executes full Terraform apply against Floci local cloud."
+        description = "Phase 2: Executes full Terraform apply against Floci cloud."
     }
 
     @TaskAction
@@ -46,9 +49,10 @@ abstract class InfraApplyTask : DefaultTask() {
         val tf = terraformPath.get()
         val env = targetEnvironment.get()
         val port = flociPort.get()
+        val endpoint = flociEndpoint.get().trimEnd('/')
 
         val awsEnv = mapOf(
-            "AWS_ENDPOINT_URL" to "http://localhost:$port",
+            "AWS_ENDPOINT_URL" to endpoint,
             "AWS_DEFAULT_REGION" to "us-east-1",
             "AWS_ACCESS_KEY_ID" to "mock_key",
             "AWS_SECRET_ACCESS_KEY" to "mock_secret"
@@ -71,12 +75,15 @@ abstract class InfraApplyTask : DefaultTask() {
         }
 
         val varFile = tfDir.resolve("environments/$env.tfvars")
-        val applyArgs = mutableListOf(tf, "apply", "-auto-approve")
+        val applyArgs = mutableListOf(
+            tf, "apply", "-auto-approve",
+            "-var=floci_endpoint=$endpoint"
+        )
         if (varFile.exists()) {
             applyArgs.addAll(listOf("-var-file", varFile.absolutePath))
         }
 
-        logger.lifecycle("Executing Phase 2 full Terraform apply for environment '$env' against Floci (port $port)...")
+        logger.lifecycle("Executing Phase 2 full Terraform apply for environment '$env' against Floci ($endpoint)...")
         val applyOut = ByteArrayOutputStream()
         val applyResult = execOperations.exec {
             workingDir = tfDir

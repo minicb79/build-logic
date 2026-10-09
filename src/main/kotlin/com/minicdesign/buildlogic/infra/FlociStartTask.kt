@@ -117,9 +117,9 @@ abstract class FlociStartTask : DefaultTask() {
 
         val port = flociPort.get()
         if (ready) {
-            logger.lifecycle("[SUCCESS] Floci local mock cloud is ready and listening on port $port.")
+            logger.lifecycle("[SUCCESS] Floci mock cloud is ready and reachable at $endpoint (port $port).")
         } else {
-            logger.warn("[WARNING] Floci port $port did not respond within $maxAttempts seconds. Containers are running, but cloud services may still be initializing.")
+            logger.warn("[WARNING] Floci at $endpoint did not respond within $maxAttempts seconds. Please verify network access or container health.")
         }
     }
 }

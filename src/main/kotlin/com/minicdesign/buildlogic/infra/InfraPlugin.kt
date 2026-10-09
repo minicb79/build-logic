@@ -12,6 +12,10 @@ class InfraPlugin : Plugin<Project> {
             domainName.convention("minicdesign.com")
             flociPort.convention(4566)
             ingressPort.convention(8080)
+            flociHost.convention("localhost")
+            flociEndpoint.convention(flociHost.map { host -> "http://$host:${flociPort.get()}" })
+            ingressHost.convention("localhost")
+            remoteServer.convention(false)
             val tfPath = if (project.file("terraform").exists()) "terraform" else "infra/terraform"
             val dcPath = if (project.file("docker").exists()) "docker" else "infra/docker"
             terraformDir.convention(project.layout.projectDirectory.dir(tfPath))
@@ -29,6 +33,8 @@ class InfraPlugin : Plugin<Project> {
             dockerComposeDir.set(extension.dockerComposeDir)
             dockerPath.set(extension.dockerPath)
             flociPort.set(extension.flociPort)
+            flociEndpoint.set(extension.flociEndpoint)
+            remoteServer.set(extension.remoteServer)
         }
 
         project.tasks.register("flociStop", FlociStopTask::class.java) {
@@ -40,14 +46,21 @@ class InfraPlugin : Plugin<Project> {
             dockerComposeDir.set(extension.dockerComposeDir)
             dockerPath.set(extension.dockerPath)
             flociPort.set(extension.flociPort)
+            flociEndpoint.set(extension.flociEndpoint)
         }
 
-        // 2. Host Aliases Verification
+        // 2. Host Aliases Verification & SSH Tunnel
         project.tasks.register("infraConfigureHosts", InfraConfigureHostsTask::class.java) {
             environment.set(extension.environment)
             serviceName.set(extension.serviceName)
             domainName.set(extension.domainName)
             ingressPort.set(extension.ingressPort)
+        }
+
+        project.tasks.register("infraTunnel", InfraTunnelTask::class.java) {
+            flociPort.set(extension.flociPort)
+            ingressPort.set(extension.ingressPort)
+            sshTarget.set(extension.sshTarget)
         }
 
         // 3. Contract Scope Synchronization
@@ -70,6 +83,7 @@ class InfraPlugin : Plugin<Project> {
             terraformPath.set(extension.terraformPath)
             secretsModule.set(extension.secretsModule)
             flociPort.set(extension.flociPort)
+            flociEndpoint.set(extension.flociEndpoint)
             dependsOn(flociStartTask)
         }
 
@@ -79,6 +93,7 @@ class InfraPlugin : Plugin<Project> {
             targetEnvironment.set(extension.environment)
             terraformPath.set(extension.terraformPath)
             flociPort.set(extension.flociPort)
+            flociEndpoint.set(extension.flociEndpoint)
             dependsOn(flociStartTask)
             dependsOn(project.provider {
                 if (extension.syncOpenApiScopes.get()) listOf(syncScopesTask) else emptyList()
@@ -91,6 +106,7 @@ class InfraPlugin : Plugin<Project> {
             targetEnvironment.set(extension.environment)
             terraformPath.set(extension.terraformPath)
             flociPort.set(extension.flociPort)
+            flociEndpoint.set(extension.flociEndpoint)
         }
 
         // Execution ordering

@@ -67,7 +67,8 @@ When applied to a service, all infrastructure files are co-located in the `<serv
   │   │           └── cognito.tf             <-- Cognito User Pool & Resource Server
   │   └── scripts/
   │       ├── manage-secrets.sh              <-- Secure out-of-band secret setter
-  │       └── setup-hosts.sh                 <-- Automated /etc/hosts helper
+  │       ├── setup-hosts.sh                 <-- Automated /etc/hosts helper
+  │       └── bootstrap-remote-floci.sh      <-- Remote Linux server bootstrap helper
   └── src/
 ```
 
@@ -88,6 +89,11 @@ infra {
     domainName.set("minicdesign.com")                       // Top-level domain for host routing
     flociPort.set(4566)                                     // Floci AWS mock port (default: 4566)
     ingressPort.set(8080)                                   // Traefik ingress port (default: 8080)
+    flociHost.set("localhost")                              // Floci host (IP or domain; default: localhost)
+    flociEndpoint.set("http://localhost:4566")              // Complete endpoint URL (default: http://${flociHost}:${flociPort})
+    ingressHost.set("localhost")                            // Traefik ingress host (default: localhost)
+    remoteServer.set(false)                                 // When true, skips local Docker Compose startup
+    sshTarget.set("user@remote-server.lab")                 // Optional SSH target for port forwarding tunnels
     terraformDir.set(file("terraform"))                     // Directory containing Terraform code
     dockerComposeDir.set(file("docker"))                    // Directory containing docker-compose.yml
     syncOpenApiScopes.set(true)                             // Auto-sync OpenAPI scopes to Cognito
@@ -108,6 +114,11 @@ infra {
 | `domainName` | `Property<String>` | `"minicdesign.com"` | Base domain for multi-environment routing rules. |
 | `flociPort` | `Property<Int>` | `4566` | Port where Floci listens for AWS service calls. |
 | `ingressPort` | `Property<Int>` | `8080` | Port where Traefik routes inbound HTTP requests. |
+| `flociHost` | `Property<String>` | `"localhost"` | Host where Floci AWS emulator runs (e.g. `"10.0.1.50"` or `"floci.lab"`). |
+| `flociEndpoint` | `Property<String>` | `http://$flociHost:$flociPort` | Complete endpoint URL used by Terraform and tasks. |
+| `ingressHost` | `Property<String>` | `"localhost"` | Host where Traefik ingress router runs. |
+| `remoteServer` | `Property<Boolean>` | `false` | When `true`, skips local Docker Compose and tests remote health directly. |
+| `sshTarget` | `Property<String>` | `null` | SSH connection destination for forwarding tunnels (e.g. `"deploy@remote.lab"`). |
 | `terraformDir` | `DirectoryProperty` | `infra/terraform` or `terraform` | Location of Terraform scripts and modules. |
 | `dockerComposeDir` | `DirectoryProperty` | `infra/docker` or `docker` | Location of `docker-compose.yml` and Traefik config. |
 | `syncOpenApiScopes` | `Property<Boolean>` | `true` | Extract OAuth2 scopes from OpenAPI contracts before Terraform apply. |
@@ -123,10 +134,11 @@ infra {
 
 | Task | Group | Description | Dependencies |
 | :--- | :--- | :--- | :--- |
-| **`flociStart`** | `infra` | Starts Floci and Traefik containers and polls readiness on `http://localhost:<flociPort>/_floci/health`. | None |
-| **`flociStatus`** | `infra` | Prints health and active cloud services running in Floci. | None |
-| **`flociStop`** | `infra` | Shuts down Floci and Traefik containers. | None |
+| **`flociStart`** | `infra` | Starts local Docker Compose or verifies remote Floci cloud health. | None |
+| **`flociStatus`** | `infra` | Prints health and active cloud services running in Floci (local or remote). | None |
+| **`flociStop`** | `infra` | Shuts down local Floci and Traefik containers. | None |
 | **`infraConfigureHosts`** | `infra` | Checks `/etc/hosts` and prints DNS alias helpers and zero-config RFC 6761 URLs. | None |
+| **`infraTunnel`** | `infra` | Displays or launches an encrypted SSH port forwarding tunnel to an external Floci server. | None |
 | **`syncOpenApiScopes`** | `infra` | Extracts `securitySchemes` scopes from OpenAPI specs and generates `scopes.auto.tfvars.json`. | None |
 | **`infraInitSecrets`** | `infra` | Phase 1 partial deployment: applies only `-target=module.secrets` and checks secret status. | `flociStart` |
 | **`infraApply`** | `infra` | Phase 2 full Terraform apply using the active environment's `.tfvars`. | `flociStart`, `syncOpenApiScopes`, `infraInitSecrets` |
@@ -243,3 +255,60 @@ Server-to-server calls authenticate using OAuth2 Client Credentials grant with A
      -H "Content-Type: application/x-www-form-urlencoded" \
      -d "grant_type=client_credentials&client_id=<ID>&client_secret=<SECRET>&scope=order-service/orders:read"
    ```
+
+---
+
+## 8. Remote & External Server Deployment
+
+Floci and Traefik can be hosted on a dedicated remote server (e.g., a shared team Linux box, CI/CD runner host, or cloud VM).
+
+### A. Access Patterns
+
+#### 1. SSH Port Forwarding Tunnel (Recommended Default - Zero Config)
+You do not need to expose Floci to the network or change local URLs. Establish an encrypted tunnel forward:
+```bash
+# Using the plugin task:
+./gradlew infraTunnel -Pconnect
+
+# Or run manually in a terminal:
+ssh -N -L 4566:localhost:4566 -L 8080:localhost:8080 user@remote-server.lab
+```
+With the tunnel active:
+- Local tools and Terraform hit `http://localhost:4566` as normal.
+- Local browsers hit `http://api-dev.order-service.minicdesign.localhost:8080` as normal.
+- All AWS compute and Traefik routing execute remotely on the server.
+
+#### 2. Corporate Mesh VPN (Tailscale / WireGuard)
+If the server and developer laptops join a private VPN (e.g. Tailscale):
+- Configure `infra { flociHost.set("floci-server.internal") }` in `build.gradle.kts`.
+- Requests route directly over the encrypted mesh network.
+
+#### 3. Wildcard Magic DNS (`*.nip.io`)
+When accessing the server by its IP address on a local area network (LAN) without modifying `/etc/hosts`:
+- Traefik automatically recognizes `.nip.io` hostnames:
+  `http://api-dev.order-service.192.168.1.150.nip.io:8080` &rarr; routes directly to the dev instance.
+
+### B. Bootstrapping Floci on the Remote Server
+
+Copy the scaffolded `infra/` folder to the remote server and run:
+```bash
+./infra/scripts/bootstrap-remote-floci.sh
+```
+This script pulls Docker images, launches Floci on port 4566 and Traefik on port 8080, and checks health readiness.
+
+### C. Configuring the Service for Remote Server Mode
+
+In your `infra/build.gradle.kts`:
+```kotlin
+infra {
+    remoteServer.set(true)                      // Skips local Docker Compose commands
+    flociHost.set("floci-server.lab")          // Or IP address
+    sshTarget.set("deploy@floci-server.lab")    // Enables ./gradlew infraTunnel
+}
+```
+Run deployment commands from your workstation:
+```bash
+./gradlew infraDeploy
+```
+Terraform will automatically target `http://floci-server.lab:4566` using `var.floci_endpoint`.
+

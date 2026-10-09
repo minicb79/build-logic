@@ -5,6 +5,7 @@ import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputDirectory
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
@@ -19,6 +20,7 @@ abstract class FlociStatusTask : DefaultTask() {
     @get:javax.inject.Inject
     abstract val execOperations: org.gradle.process.ExecOperations
 
+    @get:Optional
     @get:InputDirectory
     @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val dockerComposeDir: DirectoryProperty
@@ -29,6 +31,9 @@ abstract class FlociStatusTask : DefaultTask() {
     @get:Input
     abstract val flociPort: Property<Int>
 
+    @get:Input
+    abstract val flociEndpoint: Property<String>
+
     init {
         group = "infra"
         description = "Displays the status of Floci mock cloud and ingress services."
@@ -36,12 +41,14 @@ abstract class FlociStatusTask : DefaultTask() {
 
     @TaskAction
     fun checkStatus() {
-        val composeDir = dockerComposeDir.get().asFile
-        val composeFile = listOf(
-            composeDir.resolve("docker-compose.yml"),
-            composeDir.resolve("docker-compose.yaml"),
-            composeDir.resolve("compose.yml")
-        ).firstOrNull { it.exists() && it.isFile }
+        val composeDir = dockerComposeDir.orNull?.asFile
+        val composeFile = composeDir?.let { dir ->
+            listOf(
+                dir.resolve("docker-compose.yml"),
+                dir.resolve("docker-compose.yaml"),
+                dir.resolve("compose.yml")
+            ).firstOrNull { it.exists() && it.isFile }
+        }
 
         val dPath = dockerPath.get()
         val port = flociPort.get()
@@ -63,13 +70,15 @@ abstract class FlociStatusTask : DefaultTask() {
             logger.lifecycle("Containers:")
             logger.lifecycle(output.toString().trim())
         } else {
-            logger.lifecycle("Containers: No docker-compose.yml found in ${composeDir.absolutePath}")
+            val path = composeDir?.absolutePath ?: "unconfigured directory"
+            logger.lifecycle("Containers: No docker-compose.yml found in $path")
         }
 
         // 2. Query Floci Health
-        logger.lifecycle("\nFloci Cloud Endpoint Health (http://localhost:$port):")
+        val endpoint = flociEndpoint.get().trimEnd('/')
+        logger.lifecycle("\nFloci Cloud Endpoint Health ($endpoint):")
         var isHealthy = false
-        val endpoints = listOf("http://localhost:$port/_floci/health", "http://localhost:$port/_localstack/health")
+        val endpoints = listOf("$endpoint/_floci/health", "$endpoint/_localstack/health")
         for (ep in endpoints) {
             try {
                 val conn = URI(ep).toURL().openConnection() as HttpURLConnection
@@ -87,7 +96,7 @@ abstract class FlociStatusTask : DefaultTask() {
         }
 
         if (!isHealthy) {
-            logger.lifecycle("[OFFLINE] Floci port $port is not responding. Run './gradlew flociStart' to launch it.")
+            logger.lifecycle("[OFFLINE] Floci at $endpoint is not responding.")
         }
         logger.lifecycle("================================================================================")
     }

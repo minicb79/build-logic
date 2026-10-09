@@ -33,7 +33,7 @@ enum class SocieteGeneraleRule(
         "Do not use Joda-Time; use java.time instead."
     ),
     NO_POWERMOCK(
-        "com.societegenerale.commons.plugin.rules.NoPowerMockRuleTest",
+        "com.minicdesign.buildlogic.archunit.rules.NoPowerMockRuleTest",
         "Do not use PowerMock; write modular and testable code."
     ),
     NO_PUBLIC_FIELDS(

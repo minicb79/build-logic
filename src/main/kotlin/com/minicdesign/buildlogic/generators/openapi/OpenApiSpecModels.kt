@@ -21,7 +21,7 @@ abstract class OpenApiSpec @Inject constructor(@get:Internal val specName: Strin
     abstract val modelPackage: Property<String>
 
     /** Explicitly declare whether this is an outbound (models-only) spec or inbound (server interface). */
-    abstract val isOutbound: Property<Boolean>
+    abstract val outbound: Property<Boolean>
 
     /** Whether to derive outbound OAuth2 client configuration from this spec. */
     abstract val oauth2ScopeConfig: Property<Boolean>

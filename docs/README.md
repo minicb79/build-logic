@@ -32,9 +32,9 @@ Welcome to the documentation for **`build-logic`** (`com.minicdesign.buildlogic`
 | **`com.minicdesign.grpc-codegen`** | Protobuf messages and gRPC stub generation from `.proto` contracts (`contracts/proto/`, `src/main/proto/`). | [gRPC Codegen](file:///Users/brankominic/dev/personal/build-logic/docs/grpc-codegen.md) |
 | **`com.minicdesign.graphql-codegen`** | GraphQL data types and query API generation from schemas (`contracts/graphql/`, `src/main/resources/graphql/`) via DGS. | [GraphQL Codegen](file:///Users/brankominic/dev/personal/build-logic/docs/graphql-codegen.md) |
 | **`com.minicdesign.wiremock`** | Multi-module WireMock stub merge, collision detection, local HTTP/HTTPS server, and broker publish. | [WireMock Plugin](file:///Users/brankominic/dev/personal/build-logic/docs/wiremock.md) |
-| **`com.minicdesign.hexagonal-architecture`** | Enforces hexagonal directory layout (`app/boot`, `contracts`, `lib/core`, `lib/adapters/in`, `lib/adapters/out`, `wiremock`) and wires WireMock test stubs. | [Hexagonal Architecture](file:///Users/brankominic/dev/personal/build-logic/docs/hexagonal-architecture.md) |
 | **`com.minicdesign.docker-compose`** | Per-component Docker compose tasks (`start<Component>`, `stop<Component>`) and global status dashboard. | [Docker Compose](file:///Users/brankominic/dev/personal/build-logic/docs/docker-compose.md) |
 | **`com.minicdesign.pact`** | Consumer contract testing, parallel test runners, Pact Broker publishing, and `canIDeploy` gating. | [Pact Plugin](file:///Users/brankominic/dev/personal/build-logic/docs/pact.md) |
+| **`com.minicdesign.infra`** | Local pseudo cloud with Floci AWS mock, Traefik ingress, Terraform/OpenTofu, two-phase secret lifecycle, and Cognito M2M OAuth2 scopes. | [Floci & Infra Plugin](file:///Users/brankominic/dev/personal/build-logic/docs/floci-and-infra.md) |
 
 ---
 

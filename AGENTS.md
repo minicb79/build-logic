@@ -22,9 +22,9 @@ The [`/docs`](file:///Users/brankominic/dev/personal/build-logic/docs/README.md)
 * **gRPC & Protobuf Code Generation**: [`docs/grpc-codegen.md`](file:///Users/brankominic/dev/personal/build-logic/docs/grpc-codegen.md)
 * **GraphQL Code Generation**: [`docs/graphql-codegen.md`](file:///Users/brankominic/dev/personal/build-logic/docs/graphql-codegen.md)
 * **WireMock Stubs & Mock Server**: [`docs/wiremock.md`](file:///Users/brankominic/dev/personal/build-logic/docs/wiremock.md)
-* **Hexagonal Architecture & Service Layout**: [`docs/hexagonal-architecture.md`](file:///Users/brankominic/dev/personal/build-logic/docs/hexagonal-architecture.md)
 * **Docker Compose Management**: [`docs/docker-compose.md`](file:///Users/brankominic/dev/personal/build-logic/docs/docker-compose.md)
 * **Pact Contract Testing**: [`docs/pact.md`](file:///Users/brankominic/dev/personal/build-logic/docs/pact.md)
+* **Floci, IaC & Pseudo Cloud Infrastructure**: [`docs/floci-and-infra.md`](file:///Users/brankominic/dev/personal/build-logic/docs/floci-and-infra.md)
 
 ---
 

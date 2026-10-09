@@ -138,11 +138,12 @@ gradlePlugin {
             displayName = "MinicDesign ArchUnit Plugin"
             description = "Applies architectural governance and code quality rules based on Societe Generale ArchUnit rules."
         }
-        register("hexagonal-architecture") {
-            id = "com.minicdesign.hexagonal-architecture"
-            implementationClass = "com.minicdesign.buildlogic.hexagonal.HexagonalArchitecturePlugin"
-            displayName = "MinicDesign Hexagonal Architecture Plugin"
-            description = "Enforces the standard Hexagonal Architecture directory structure (app/boot, contracts, lib/core, lib/adapters/in, lib/adapters/out, wiremock)."
+
+        register("infra") {
+            id = "com.minicdesign.infra"
+            implementationClass = "com.minicdesign.buildlogic.infra.InfraPlugin"
+            displayName = "MinicDesign Infrastructure & Floci Local Cloud Plugin"
+            description = "Coordinates local pseudo cloud deployment with Floci, Terraform IaC, Docker Compose, and secret lifecycle management."
         }
     }
 }

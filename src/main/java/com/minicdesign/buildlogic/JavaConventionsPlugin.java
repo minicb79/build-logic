@@ -45,7 +45,12 @@ public class JavaConventionsPlugin implements Plugin<Project> {
 
         // 4. Configure Java compilation options (UTF-8, warnings as errors, standard lints)
         project.getTasks().withType(JavaCompile.class).configureEach(compile -> {
-            compile.getOptions().getCompilerArgs().addAll(Arrays.asList("-Xlint:all", "-Xlint:-dangling-doc-comments", "-Xlint:-processing", "-Werror"));
+            int targetVersion = extension.getJavaVersion().get();
+            List<String> args = new ArrayList<>(Arrays.asList("-Xlint:all", "-Xlint:-processing", "-Werror"));
+            if (targetVersion >= 23) {
+                args.add("-Xlint:-dangling-doc-comments");
+            }
+            compile.getOptions().getCompilerArgs().addAll(args);
             compile.getOptions().setEncoding("UTF-8");
         });
 
@@ -160,16 +165,16 @@ public class JavaConventionsPlugin implements Plugin<Project> {
                 VersionCatalog libs = catalogs.find("libs").orElse(null);
                 if (libs != null && libs.findLibrary("junit-jupiter").isPresent()) {
                     project.getDependencies().add("testImplementation", libs.findLibrary("junit-jupiter").get());
-                } else {
+                } else if (!project.getPlugins().hasPlugin("org.springframework.boot")) {
                     project.getDependencies().add("testImplementation", "org.junit.jupiter:junit-jupiter:5.10.2");
                 }
-                
+
                 if (libs != null && libs.findLibrary("junit-platform-launcher").isPresent()) {
                     project.getDependencies().add("testRuntimeOnly", libs.findLibrary("junit-platform-launcher").get());
-                } else {
+                } else if (!project.getPlugins().hasPlugin("org.springframework.boot")) {
                     project.getDependencies().add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:1.10.2");
                 }
-            } else {
+            } else if (!project.getPlugins().hasPlugin("org.springframework.boot")) {
                 project.getDependencies().add("testImplementation", "org.junit.jupiter:junit-jupiter:5.10.2");
                 project.getDependencies().add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:1.10.2");
             }

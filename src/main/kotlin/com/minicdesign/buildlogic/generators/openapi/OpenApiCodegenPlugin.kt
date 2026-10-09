@@ -29,7 +29,7 @@ open class OpenApiCodegenPlugin : Plugin<Project> {
                 specFilename.convention("${project.name}.yml")
                 apiPackage.convention("api")
                 modelPackage.convention("model")
-                isOutbound.convention(false)
+                outbound.convention(false)
                 oauth2ScopeConfig.convention(false)
                 oauth2ProviderId.convention("okta")
                 oauth2ClientIdProperty.convention("\${oauth2.client-id}")
@@ -142,7 +142,7 @@ open class OpenApiCodegenPlugin : Plugin<Project> {
                                     specFilename.set(file.name)
                                     apiPackage.set(apiPkg)
                                     modelPackage.set(modelPkg)
-                                    isOutbound.set(true)
+                                    outbound.set(true)
                                     oauth2ScopeConfig.set(discovery.oauth2ScopeConfig.get())
                                     oauth2ProviderId.set(discovery.oauth2ProviderId.get())
                                     oauth2ClientIdProperty.set(discovery.oauth2ClientIdProperty.get())
@@ -180,7 +180,7 @@ open class OpenApiCodegenPlugin : Plugin<Project> {
                             openApiSpecsContainer.create(specName).apply {
                                 specPath.set(file.parentFile.relativeTo(project.projectDir).invariantSeparatorsPath)
                                 specFilename.set(file.name)
-                                this.isOutbound.set(isOutbound)
+                                this.outbound.set(isOutbound)
                                 if (isOutbound) {
                                     val segments = relPath.split('/').filter { it.isNotBlank() }
                                     val subPkg = segments.dropLast(1).joinToString(".") { sanitizePackageSegment(it) }
@@ -215,7 +215,7 @@ open class OpenApiCodegenPlugin : Plugin<Project> {
 
                 val effectiveApiPkg = resolvePackage(basePkg, spec.apiPackage.get())
                 val effectiveModelPkg = resolvePackage(basePkg, spec.modelPackage.get())
-                val isOutbound = spec.isOutbound.get() ||
+                val isOutbound = spec.outbound.get() ||
                         spec.specPath.get().contains("/out") ||
                         spec.specPath.get().endsWith("/out") ||
                         spec.apiPackage.get().contains(".out.") ||

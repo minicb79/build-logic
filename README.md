@@ -19,7 +19,6 @@ Full documentation for humans and AI agents is available in the **[`/docs`](file
 * **[gRPC & Protobuf Codegen (`com.minicdesign.grpc-codegen`)](file:///Users/brankominic/dev/personal/build-logic/docs/grpc-codegen.md)**
 * **[GraphQL Codegen (`com.minicdesign.graphql-codegen`)](file:///Users/brankominic/dev/personal/build-logic/docs/graphql-codegen.md)**
 * **[WireMock (`com.minicdesign.wiremock`)](file:///Users/brankominic/dev/personal/build-logic/docs/wiremock.md)**
-* **[Hexagonal Architecture (`com.minicdesign.hexagonal-architecture`)](file:///Users/brankominic/dev/personal/build-logic/docs/hexagonal-architecture.md)**
 * **[Docker Compose (`com.minicdesign.docker-compose`)](file:///Users/brankominic/dev/personal/build-logic/docs/docker-compose.md)**
 * **[Pact Contract Testing (`com.minicdesign.pact`)](file:///Users/brankominic/dev/personal/build-logic/docs/pact.md)**
 

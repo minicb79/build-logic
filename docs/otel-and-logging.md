@@ -75,6 +75,11 @@ The generated classes look for standard Spring properties:
 
 ```yaml
 logging:
+  otel:
+    global-exception-handler:
+      # Enable or disable generated GlobalExceptionHandler (Default: true)
+      # When enabled, runs at Ordered.LOWEST_PRECEDENCE so custom application exception handlers take precedence.
+      enabled: true
   trace:
     # Header name to extract and inject the trace ID (Default: x-trace-id)
     header-name: x-trace-id

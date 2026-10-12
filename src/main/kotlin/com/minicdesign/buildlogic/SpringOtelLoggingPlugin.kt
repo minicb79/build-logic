@@ -268,6 +268,9 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                     import io.micrometer.tracing.Tracer;
                     import org.slf4j.Logger;
                     import org.slf4j.LoggerFactory;
+                    import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+                    import org.springframework.core.Ordered;
+                    import org.springframework.core.annotation.Order;
                     import org.springframework.http.HttpStatus;
                     import org.springframework.http.ProblemDetail;
                     import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -275,6 +278,8 @@ class SpringOtelLoggingPlugin : Plugin<Project> {
                     import org.springframework.web.context.request.WebRequest;
 
                     @RestControllerAdvice
+                    @Order(Ordered.LOWEST_PRECEDENCE)
+                    @ConditionalOnProperty(name = "logging.otel.global-exception-handler.enabled", havingValue = "true", matchIfMissing = true)
                     public class GlobalExceptionHandler {
 
                         private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);

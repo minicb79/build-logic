@@ -4,6 +4,8 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.VersionCatalogsExtension
 
+import org.gradle.api.provider.Provider
+
 class OtelBasePlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val catalogs = project.extensions.findByType(VersionCatalogsExtension::class.java)
@@ -33,8 +35,14 @@ class OtelBasePlugin : Plugin<Project> {
             "io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha"
         }
 
+        val platformNotation = if (otelBom is Provider<*>) {
+            otelBom.get()
+        } else {
+            otelBom
+        }
+
         project.dependencies.apply {
-            val platformBom = project.dependencies.platform(otelBom)
+            val platformBom = project.dependencies.platform(platformNotation)
             add("implementation", platformBom)
             add("implementation", otelApi)
             add("implementation", otelSdk)

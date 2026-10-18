@@ -18,7 +18,7 @@ class GrpcCodegenPlugin : Plugin<Project> {
         project.pluginManager.apply(ProtobufPlugin::class.java)
 
         val extension = project.extensions.create("grpcCodegen", GrpcCodegenExtension::class.java).apply {
-            protobufVersion.convention("3.25.5")
+            protobufVersion.convention("4.28.2")
             grpcVersion.convention("1.68.1")
             generateGrpc.convention(true)
             outputDir.convention(project.layout.buildDirectory.dir("generated/sources/proto/main/java"))
@@ -41,34 +41,40 @@ class GrpcCodegenPlugin : Plugin<Project> {
             dependsOn("generateProto")
         }
 
+        // Configure Protobuf Gradle Plugin immediately so locators are registered
+        val protobuf = project.extensions.getByType(ProtobufExtension::class.java)
+        protobuf.protoc {
+            artifact = "com.google.protobuf:protoc:4.28.2"
+        }
+        protobuf.plugins {
+            create("grpc") {
+                artifact = "io.grpc:protoc-gen-grpc-java:1.68.1"
+            }
+        }
+        protobuf.generateProtoTasks {
+            all().forEach { task ->
+                task.builtins {
+                    named("java")
+                }
+                task.plugins {
+                    create("grpc")
+                }
+            }
+        }
+
         project.afterEvaluate {
             val protoVer = extension.protobufVersion.get()
             val grpcVer = extension.grpcVersion.get()
             val genGrpc = extension.generateGrpc.get()
 
-            // 1. Configure Protobuf Gradle Plugin
-            val protobuf = project.extensions.getByType(ProtobufExtension::class.java)
+            // 1. Update Protobuf compiler and plugin artifacts with configured versions
             protobuf.protoc {
                 artifact = "com.google.protobuf:protoc:$protoVer"
             }
-
             if (genGrpc) {
                 protobuf.plugins {
-                    create("grpc") {
+                    named("grpc") {
                         artifact = "io.grpc:protoc-gen-grpc-java:$grpcVer"
-                    }
-                }
-            }
-
-            protobuf.generateProtoTasks {
-                all().forEach { task ->
-                    task.builtins {
-                        named("java")
-                    }
-                    if (genGrpc) {
-                        task.plugins {
-                            create("grpc")
-                        }
                     }
                 }
             }

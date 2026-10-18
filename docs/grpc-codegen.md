@@ -67,8 +67,8 @@ my-service/
 
 ```kotlin
 grpcCodegen {
-    // Protobuf compiler artifact version (Default: 3.25.5)
-    protobufVersion.set("3.25.5")
+    // Protobuf compiler artifact version (Default: 4.28.2)
+    protobufVersion.set("4.28.2")
 
     // gRPC plugin artifact version (Default: 1.68.1)
     grpcVersion.set("1.68.1")
@@ -93,7 +93,7 @@ grpcCodegen {
 
 | Property | Type | Default Value | Description |
 | :--- | :--- | :--- | :--- |
-| `protobufVersion` | `Property<String>` | `3.25.5` | Version of `com.google.protobuf:protoc` compiler artifact. |
+| `protobufVersion` | `Property<String>` | `4.28.2` | Version of `com.google.protobuf:protoc` compiler artifact. |
 | `grpcVersion` | `Property<String>` | `1.68.1` | Version of `io.grpc:protoc-gen-grpc-java` compiler artifact. |
 | `generateGrpc` | `Property<Boolean>` | `true` | When true, generates gRPC client and server stubs in addition to protobuf DTOs. |
 | `outputDir` | `DirectoryProperty` | `build/generated/sources/proto/main/java` | Directory for generated Java protobuf message classes. |
